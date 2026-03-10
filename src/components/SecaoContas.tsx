@@ -398,7 +398,7 @@ export function SecaoContas() {
                     className="group p-4 rounded-3xl glass-sm border border-white/5 hover:border-[var(--color-primaria)]/20 transition-all flex items-center gap-4 relative overflow-hidden"
                   >
                     {/* Background decorativo */}
-                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity pointer-events-none">
                       <User className="w-16 h-16 text-[var(--color-primaria)]" />
                     </div>
 
@@ -432,6 +432,7 @@ export function SecaoContas() {
                     </div>
 
                     <button
+                      type="button"
                       onClick={() => removerConta(conta.id)}
                       className="p-2 rounded-xl bg-white/5 hover:bg-rose-500/20 text-white/20 hover:text-rose-400 transition-all cursor-pointer border border-transparent hover:border-rose-500/30"
                       title={t('contas.removerConta')}
