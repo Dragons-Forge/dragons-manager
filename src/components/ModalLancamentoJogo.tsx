@@ -5,6 +5,7 @@ import { Loader2, X, Play, Monitor, User, AlertCircle, CheckCircle2, ChevronDown
 import { InfoJogoRoblox } from '../tipos';
 import { useContas } from '../hooks/useContas';
 import { useInstancias } from '../hooks/useInstancias';
+import { useTranslation } from 'react-i18next';
 
 interface PropsModal {
   jogo: InfoJogoRoblox;
@@ -12,14 +13,15 @@ interface PropsModal {
 }
 
 export function ModalLancamentoJogo({ jogo, aoFechar }: PropsModal) {
+  const { t } = useTranslation();
   const { contas, obterTicketParaConta } = useContas();
   const { todosOsClientes } = useInstancias();
-  
+
   const [clienteSelecionado, definirClienteSelecionado] = useState<string>('');
   const [dropdownClienteAberto, definirDropdownClienteAberto] = useState(false);
   const [contaSelecionada, definirContaSelecionada] = useState<string>('');
   const [jobIdInput, definirJobIdInput] = useState('');
-  
+
   const [estaLancando, definirEstaLancando] = useState(false);
   const [erroMensagem, definirErroMensagem] = useState<string | null>(null);
   const [sucessoMensagem, definirSucessoMensagem] = useState<string | null>(null);
@@ -63,7 +65,7 @@ export function ModalLancamentoJogo({ jogo, aoFechar }: PropsModal) {
         jobId: jobIdInput.trim() || null,
       });
 
-      definirSucessoMensagem(`Iniciando ${jogo.nome}...`);
+      definirSucessoMensagem(t('jogos.iniciando', { nome: jogo.nome }));
       setTimeout(() => aoFechar(), 2500);
     } catch (e) {
       definirErroMensagem(String(e));
@@ -100,7 +102,7 @@ export function ModalLancamentoJogo({ jogo, aoFechar }: PropsModal) {
               />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--cor-superficie)] to-transparent" />
-            
+
             <button
               onClick={aoFechar}
               className="absolute top-4 right-4 p-2 rounded-full bg-black/40 text-white/70 hover:text-white hover:bg-black/60 transition-colors z-10"
@@ -110,8 +112,8 @@ export function ModalLancamentoJogo({ jogo, aoFechar }: PropsModal) {
 
             <div className="absolute bottom-4 left-6 right-6 flex items-end gap-4">
               {jogo.thumbnail_url && (
-                <div 
-                  className="w-20 h-20 rounded-2xl overflow-hidden shadow-xl z-10" 
+                <div
+                  className="w-20 h-20 rounded-2xl overflow-hidden shadow-xl z-10"
                   style={{ outline: '4px solid var(--cor-fundo)' }}
                 >
                   <img src={jogo.thumbnail_url} alt={jogo.nome} className="w-full h-full object-cover bg-slate-800" />
@@ -131,23 +133,22 @@ export function ModalLancamentoJogo({ jogo, aoFechar }: PropsModal) {
             <div className="space-y-3">
               <label className="flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--cor-texto)' }}>
                 <User className="w-4 h-4 text-[var(--cor-primaria)]" />
-                Selecione a Conta
+                {t('jogos.selecioneConta')}
               </label>
               <div className="grid grid-cols-2 gap-3 max-h-40 overflow-y-auto custom-scrollbar p-1">
                 {contas.length === 0 ? (
                   <p className="col-span-2 text-sm text-center text-rose-400 py-4 bg-rose-500/10 rounded-xl border border-rose-500/20">
-                    Nenhuma conta configurada.
+                    {t('jogos.nenhumaConta')}
                   </p>
                 ) : (
                   contas.map(c => (
                     <div
                       key={c.id}
                       onClick={() => !estaLancando && definirContaSelecionada(c.id)}
-                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200 ${
-                        contaSelecionada === c.id 
+                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200 ${contaSelecionada === c.id
                           ? 'bg-[var(--cor-primaria)]/10 border-[var(--cor-primaria)] shadow-[0_0_15px_rgba(99,102,241,0.2)]'
                           : 'bg-black/20 border-white/5 hover:bg-white/5'
-                      } ${estaLancando ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        } ${estaLancando ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <img src={c.usuario.avatar_url} alt="" className="w-8 h-8 rounded-full bg-black/40" />
                       <div className="flex-1 min-w-0">
@@ -164,7 +165,7 @@ export function ModalLancamentoJogo({ jogo, aoFechar }: PropsModal) {
             <div className="space-y-3">
               <label className="flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--cor-texto)' }}>
                 <Monitor className="w-4 h-4 text-[var(--cor-acento)]" />
-                Selecione o Cliente
+                {t('jogos.selecioneCliente')}
               </label>
               <div className="relative z-50">
                 <button
@@ -180,9 +181,9 @@ export function ModalLancamentoJogo({ jogo, aoFechar }: PropsModal) {
                   }}
                 >
                   <span className="truncate">
-                    {todosOsClientes.length === 0 
-                      ? 'Nenhum cliente detectado' 
-                      : todosOsClientes.find(c => c.caminho === clienteSelecionado)?.nome || 'Selecione um cliente'
+                    {todosOsClientes.length === 0
+                      ? t('jogos.nenhumCliente')
+                      : todosOsClientes.find(c => c.caminho === clienteSelecionado)?.nome || t('jogos.selecionarUmCliente')
                     }
                   </span>
                   <ChevronDown className={`w-4 h-4 text-white/50 transition-transform duration-200 ${dropdownClienteAberto ? 'rotate-180' : ''}`} />
@@ -204,11 +205,10 @@ export function ModalLancamentoJogo({ jogo, aoFechar }: PropsModal) {
                               definirClienteSelecionado(cli.caminho);
                               definirDropdownClienteAberto(false);
                             }}
-                            className={`px-3 py-3 rounded-lg text-sm cursor-pointer transition-colors flex items-center justify-between font-medium ${
-                              clienteSelecionado === cli.caminho 
-                                ? 'bg-[var(--cor-primaria)] text-white' 
+                            className={`px-3 py-3 rounded-lg text-sm cursor-pointer transition-colors flex items-center justify-between font-medium ${clienteSelecionado === cli.caminho
+                                ? 'bg-[var(--cor-primaria)] text-white'
                                 : 'text-white/80 hover:bg-white/10 hover:text-white'
-                            }`}
+                              }`}
                           >
                             <span className="truncate">{cli.nome}</span>
                             {clienteSelecionado === cli.caminho && (
@@ -227,13 +227,13 @@ export function ModalLancamentoJogo({ jogo, aoFechar }: PropsModal) {
             <div className="space-y-3">
               <label className="flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--cor-texto)' }}>
                 <Server className="w-4 h-4 text-emerald-400" />
-                Servidor Específico / Job ID (Opcional)
+                {t('jogos.servidorJobId')}
               </label>
               <input
                 type="text"
                 value={jobIdInput}
                 onChange={(e) => definirJobIdInput(e.target.value)}
-                placeholder="Ex: 5b4e3a2b-11c2-4d3e-..."
+                placeholder={t('jogos.exJobId')}
                 disabled={estaLancando}
                 className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all disabled:opacity-50 border focus:border-emerald-400"
                 style={{
@@ -251,7 +251,7 @@ export function ModalLancamentoJogo({ jogo, aoFechar }: PropsModal) {
                 <p className="text-xs leading-relaxed">{erroMensagem}</p>
               </div>
             )}
-            
+
             {sucessoMensagem && (
               <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
@@ -272,12 +272,12 @@ export function ModalLancamentoJogo({ jogo, aoFechar }: PropsModal) {
               {estaLancando ? (
                 <>
                   <Loader2 className="w-5 h-5 animar-girar" />
-                  Preparando Jogo...
+                  {t('jogos.preparandoJogo')}
                 </>
               ) : (
                 <>
                   <Play className="w-5 h-5 fill-current" />
-                  Jogar Agora
+                  {t('jogos.jogarAgora')}
                 </>
               )}
             </button>

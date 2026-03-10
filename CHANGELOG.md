@@ -1,0 +1,30 @@
+# Changelog
+
+Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
+
+O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
+e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
+
+## [1.1.0] - 2026-03-10
+### Adicionado
+- Internacionalização completa em Português e Inglês utilizando `react-i18next`.
+- Troca de idioma em tempo real direto pela Interface do Usuário (UI).
+- Campo opcional de Job ID (Servidor Específico) adicionado no modal de Lançamento de Instância.
+
+### Corrigido
+- Traduções quebradas ou com chaves estáticas ao longo de painéis de perfil de usuário e visualizador de jogos.
+- Correções estéticas e links apontados na página Sobre.
+
+## [1.0.0] - 2026-03-10
+### Adicionado
+- Implementação inicial da interface moderna com React, TypeScript, TailwindCSS e Framer Motion.
+- Integração do Backend nativo em Rust (Tauri) com bypass do Mutex `ROBLOX_singletonEvent`.
+- Sistema de isolamento de contas via diretórios `LocalStorage`.
+- Gerenciador persistente de Múltiplas Contas do Roblox.
+- Biblioteca de Jogos completa utilizando APIs Search e Explore do Roblox.
+- Suporte a detecção e adição de clientes customizados (Bloxstrap, Fishtrap, etc).
+- Suporte de entrada via Job ID para acesso a servidores específicos.
+- Monitoramento de instâncias e PIDs em tempo real.
+- Página dinâmica de Perfil para busca de jogadores.
+- Documentações README em Português e Inglês.
+- **[NOVO]** Sistema de Changelog adicionado para rastreamento de versão.

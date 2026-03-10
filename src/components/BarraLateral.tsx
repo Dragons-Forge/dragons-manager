@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Gamepad2, Search, Info, ChevronRight, Users, LayoutDashboard } from 'lucide-react';
+import { Gamepad2, Search, Info, ChevronRight, Users, LayoutDashboard, Globe } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { SecaoAtiva } from '../tipos';
 import clsx from 'clsx';
 
@@ -43,6 +44,13 @@ const itensNavegacao = [
 ] as const;
 
 export function BarraLateral({ secaoAtiva, aoSelecionarSecao, quantidadeInstancias }: BarraLateralProps) {
+  const { t, i18n } = useTranslation();
+
+  const alterarIdioma = () => {
+    const novoIdioma = i18n.language === 'pt' ? 'en' : 'pt';
+    i18n.changeLanguage(novoIdioma);
+    localStorage.setItem('multiroblox_idioma', novoIdioma);
+  };
   return (
     <aside
       className="flex flex-col h-full w-64 flex-shrink-0 border-r"
@@ -67,7 +75,7 @@ export function BarraLateral({ secaoAtiva, aoSelecionarSecao, quantidadeInstanci
 
       {/* Navegação */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {itensNavegacao.map(({ id, rotulo, descricao, Icone }) => {
+        {itensNavegacao.map(({ id, Icone }) => {
           const eAtivo = secaoAtiva === id;
           return (
             <motion.button
@@ -96,7 +104,7 @@ export function BarraLateral({ secaoAtiva, aoSelecionarSecao, quantidadeInstanci
               />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">
-                  {rotulo}
+                  {t(`menu.${id}`)}
                   {id === 'instancias' && quantidadeInstancias > 0 && (
                     <span
                       className="ml-2 inline-flex items-center justify-center w-4 h-4 text-xs font-bold rounded-full"
@@ -106,7 +114,7 @@ export function BarraLateral({ secaoAtiva, aoSelecionarSecao, quantidadeInstanci
                     </span>
                   )}
                 </div>
-                <div className="text-xs truncate opacity-60">{descricao}</div>
+                <div className="text-xs truncate opacity-60">{t(`menu.${id}Desc`)}</div>
               </div>
               {eAtivo && (
                 <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--color-primaria)' }} />
@@ -116,17 +124,34 @@ export function BarraLateral({ secaoAtiva, aoSelecionarSecao, quantidadeInstanci
         })}
       </nav>
 
-      {/* Rodapé */}
-      <div className="p-4 border-t" style={{ borderColor: 'var(--color-borda)' }}>
+      {/* Rodapé e Idioma */}
+      <div className="p-4 border-t space-y-3" style={{ borderColor: 'var(--color-borda)' }}>
+
+        <button
+          onClick={alterarIdioma}
+          className="w-full flex items-center justify-between p-2.5 rounded-xl border transition-colors cursor-pointer"
+          style={{ borderColor: 'var(--color-borda)', background: 'var(--cor-superficie-2)' }}
+        >
+          <div className="flex items-center gap-2">
+            <Globe className="w-4 h-4 text-white/50" />
+            <span className="text-xs font-medium text-white/70">
+              {t('geral.idioma')}
+            </span>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/10 text-white uppercase">
+            {i18n.language}
+          </span>
+        </button>
+
         <div
           className="rounded-xl p-3 text-center"
           style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }}
         >
           <p className="text-xs font-medium" style={{ color: 'var(--color-texto-suave)' }}>
-            Baseado no MultiRoblox
+            {t('menu.baseadoEm')}
           </p>
           <p className="text-xs mt-0.5" style={{ color: 'var(--color-texto-apagado)' }}>
-            by WellDone-Dev
+            {t('menu.por')} WellDone-Dev
           </p>
         </div>
       </div>

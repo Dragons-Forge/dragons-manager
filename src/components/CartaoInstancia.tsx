@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Clock, Activity, Loader2, Power, Gamepad2 } from 'lucide-react';
 import { InfoInstancia } from '../tipos';
 import { useContas } from '../hooks/useContas';
+import { useTranslation } from 'react-i18next';
 
 interface CartaoInstanciaProps {
   instancia: InfoInstancia;
@@ -11,23 +12,24 @@ interface CartaoInstanciaProps {
   eEncerrando?: boolean;
 }
 
-function formatarTempoAtivo(start_time: number) {
-  if (start_time === 0) return 'Recentemente';
+function formatarTempoAtivo(start_time: number, t: any) {
+  if (start_time === 0) return t('instancias.recentemente');
   const agora = Math.floor(Date.now() / 1000);
   const diff = agora - start_time;
-  
+
   const minutos = Math.floor(diff / 60);
   const horas = Math.floor(minutos / 60);
-  
+
   if (horas > 0) return `${horas}h ${minutos % 60}m`;
   if (minutos > 0) return `${minutos}m ${diff % 60}s`;
   return `${diff}s`;
 }
 
 export function CartaoInstancia({ instancia, numero, aoFechar, eFechando, eEncerrando }: CartaoInstanciaProps) {
-  const tempoAtivo = formatarTempoAtivo(instancia.tempo_iniciado_secs);
+  const { t } = useTranslation();
+  const tempoAtivo = formatarTempoAtivo(instancia.tempo_iniciado_secs, t);
   const { contas } = useContas();
-  
+
   const contaVinculada = contas.find(c => c.id === instancia.conta_id);
 
   return (
@@ -69,10 +71,10 @@ export function CartaoInstancia({ instancia, numero, aoFechar, eFechando, eEncer
               #{numero}
             </div>
           )}
-          
+
           <div>
             <h3 className="text-sm font-bold text-white truncate max-w-[140px]">
-              {contaVinculada ? contaVinculada.usuario.nome_display : 'Roblox Instance'}
+              {contaVinculada ? contaVinculada.usuario.nome_display : t('instancias.instanciaRoblox')}
             </h3>
             <div className="flex items-center gap-1.5 ">
               <div
@@ -83,7 +85,7 @@ export function CartaoInstancia({ instancia, numero, aoFechar, eFechando, eEncer
                 }}
               />
               <span className="text-[10px] uppercase font-bold tracking-wider" style={{ color: 'var(--color-sucesso)' }}>
-                Ativa
+                {t('instancias.ativa')}
               </span>
             </div>
           </div>
@@ -91,7 +93,7 @@ export function CartaoInstancia({ instancia, numero, aoFechar, eFechando, eEncer
 
         <div className="text-right">
           <p className="text-[10px] uppercase font-bold tracking-wider" style={{ color: 'var(--color-texto-apagado)' }}>
-            PID do Processo
+            {t('instancias.pidProcesso')}
           </p>
           <p className="text-sm font-mono font-bold text-white">
             {instancia.pid}
@@ -103,7 +105,7 @@ export function CartaoInstancia({ instancia, numero, aoFechar, eFechando, eEncer
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5" style={{ color: 'var(--color-texto-suave)' }}>
             <Clock className="w-3.5 h-3.5" />
-            <span>Tempo Ativo</span>
+            <span>{t('instancias.tempoAtivo')}</span>
           </div>
           <span className="font-medium text-white">{tempoAtivo}</span>
         </div>
@@ -111,16 +113,16 @@ export function CartaoInstancia({ instancia, numero, aoFechar, eFechando, eEncer
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5" style={{ color: 'var(--color-texto-suave)' }}>
             <Activity className="w-3.5 h-3.5" />
-            <span>Status</span>
+            <span>{t('instancias.status')}</span>
           </div>
-          <span className="font-medium" style={{ color: 'var(--color-sucesso)' }}>Executando</span>
+          <span className="font-medium" style={{ color: 'var(--color-sucesso)' }}>{t('instancias.executando')}</span>
         </div>
 
         {instancia.nome_jogo && (
           <div className="flex items-center justify-between text-xs pt-2 border-t border-white/5">
             <div className="flex items-center gap-1.5" style={{ color: 'var(--color-primaria)' }}>
               <Gamepad2 className="w-3.5 h-3.5" />
-              <span>Jogando</span>
+              <span>{t('instancias.jogando')}</span>
             </div>
             <span className="font-bold text-white truncate max-w-[120px]" title={instancia.nome_jogo}>
               {instancia.nome_jogo}
@@ -145,12 +147,12 @@ export function CartaoInstancia({ instancia, numero, aoFechar, eFechando, eEncer
         {eFechando || eEncerrando ? (
           <>
             <Loader2 className="w-3.5 h-3.5 animar-girar" />
-            <span>Encerrando...</span>
+            <span>{t('instancias.encerrando')}</span>
           </>
         ) : (
           <>
             <Power className="w-3.5 h-3.5" />
-            <span>Encerrar instância</span>
+            <span>{t('instancias.encerrarInstancia')}</span>
           </>
         )}
       </motion.button>

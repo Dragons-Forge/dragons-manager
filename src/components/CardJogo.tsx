@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Heart, Users, ThumbsUp } from 'lucide-react';
 import { InfoJogoRoblox } from '../tipos';
+import { useTranslation } from 'react-i18next';
 
 interface PropsCardJogo {
   jogo: InfoJogoRoblox;
@@ -9,6 +10,7 @@ interface PropsCardJogo {
 }
 
 export function CardJogo({ jogo, aoClicar, aoFavoritar }: PropsCardJogo) {
+  const { t } = useTranslation();
   // Formata números grandes (ex: 12500 -> 12.5k)
   const formatarNumero = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -40,7 +42,7 @@ export function CardJogo({ jogo, aoClicar, aoFavoritar }: PropsCardJogo) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-slate-800/50">
-            <span className="text-slate-500 text-xs">Sem imagem</span>
+            <span className="text-slate-500 text-xs">{t('jogos.semImagem')}</span>
           </div>
         )}
 
@@ -56,8 +58,8 @@ export function CardJogo({ jogo, aoClicar, aoFavoritar }: PropsCardJogo) {
             border: `1px solid ${jogo.favorito_local ? 'rgba(244, 63, 94, 0.4)' : 'rgba(255,255,255,0.1)'}`
           }}
         >
-          <Heart 
-            className={`w-4 h-4 transition-colors ${jogo.favorito_local ? 'text-rose-500 fill-rose-500' : 'text-white'}`} 
+          <Heart
+            className={`w-4 h-4 transition-colors ${jogo.favorito_local ? 'text-rose-500 fill-rose-500' : 'text-white'}`}
           />
         </button>
 
@@ -84,11 +86,11 @@ export function CardJogo({ jogo, aoClicar, aoFavoritar }: PropsCardJogo) {
         </h3>
         {jogo.criador_nome && (
           <p className="text-xs mb-2" style={{ color: 'var(--cor-texto-suave)' }}>
-            Por <span className="text-white/80 font-medium">{jogo.criador_nome}</span>
+            {t('jogos.por')} <span className="text-white/80 font-medium">{jogo.criador_nome}</span>
           </p>
         )}
         <p className="text-[11px] line-clamp-2 mt-auto leading-relaxed" style={{ color: 'var(--cor-texto-apagado)' }}>
-          {jogo.descricao || 'Nenhuma descrição fornecida.'}
+          {jogo.descricao || t('jogos.semDescricao')}
         </p>
       </div>
     </motion.div>

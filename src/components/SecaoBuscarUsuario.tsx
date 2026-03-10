@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { invoke } from '@tauri-apps/api/core';
 import { Search, User, ExternalLink, AlertCircle, Loader2, Users, Hash, ArrowRight } from 'lucide-react';
 import { InfoUsuarioRoblox } from '../tipos';
+import { useTranslation } from 'react-i18next';
 
 export function SecaoBuscarUsuario() {
+  const { t } = useTranslation();
   const [termoBusca, definirTermoBusca] = useState('');
   const [estaCarregando, definirEstaCarregando] = useState(false);
   const [resultadoUsuario, definirResultadoUsuario] = useState<InfoUsuarioRoblox | null>(null);
@@ -47,10 +49,10 @@ export function SecaoBuscarUsuario() {
       {/* Cabeçalho */}
       <div className="mb-6">
         <h2 className="text-xl font-bold gradient-text" style={{ fontFamily: 'var(--fonte-heading)' }}>
-          Buscar Jogador
+          {t('buscarUsuario.titulo')}
         </h2>
         <p className="text-sm mt-1" style={{ color: 'var(--cor-texto-suave)' }}>
-          Consulte informações de qualquer perfil do Roblox
+          {t('buscarUsuario.descricao')}
         </p>
       </div>
 
@@ -77,7 +79,7 @@ export function SecaoBuscarUsuario() {
             type="text"
             value={termoBusca}
             onChange={(e) => definirTermoBusca(e.target.value)}
-            placeholder="Nome de usuário..."
+            placeholder={t('buscarUsuario.placeholderInput')}
             autoFocus
             className="flex-1 bg-transparent text-sm outline-none"
             style={{ color: 'var(--cor-texto)', fontFamily: 'var(--fonte-body)' }}
@@ -95,7 +97,7 @@ export function SecaoBuscarUsuario() {
               <Loader2 className="w-3.5 h-3.5 animar-girar" />
             ) : (
               <>
-                Buscar
+                {t('buscarUsuario.buscar')}
                 <ArrowRight className="w-3.5 h-3.5" />
               </>
             )}
@@ -123,10 +125,10 @@ export function SecaoBuscarUsuario() {
             </div>
             <div className="text-center">
               <p className="text-sm font-medium" style={{ color: 'var(--cor-texto-suave)' }}>
-                Pesquise um jogador
+                {t('buscarUsuario.vazioTitulo')}
               </p>
               <p className="text-xs mt-1" style={{ color: 'var(--cor-texto-apagado)' }}>
-                Digite o username acima para ver o perfil
+                {t('buscarUsuario.vazioDescricao')}
               </p>
             </div>
           </motion.div>
@@ -147,7 +149,7 @@ export function SecaoBuscarUsuario() {
             >
               <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-rose-300">Jogador não encontrado</p>
+                <p className="text-sm font-semibold text-rose-300">{t('buscarUsuario.erroNaoEncontrado')}</p>
                 <p className="text-xs mt-0.5 text-rose-400/60">{erroMensagem}</p>
               </div>
             </div>
@@ -160,7 +162,7 @@ export function SecaoBuscarUsuario() {
                 color: 'var(--cor-texto-suave)',
               }}
             >
-              Tentar novamente
+              {t('buscarUsuario.tentarNovamente')}
             </button>
           </motion.div>
         )}
@@ -215,7 +217,7 @@ export function SecaoBuscarUsuario() {
                   }}
                 >
                   <ExternalLink className="w-3 h-3" />
-                  Ver perfil
+                  {t('buscarUsuario.verPerfil')}
                 </motion.a>
               </div>
 
@@ -251,7 +253,7 @@ export function SecaoBuscarUsuario() {
                   }}
                 >
                   <User className="w-3 h-3" />
-                  Jogador Roblox
+                  {t('buscarUsuario.badgeJogador')}
                 </span>
               </div>
 
@@ -277,7 +279,7 @@ export function SecaoBuscarUsuario() {
                   color: 'var(--cor-texto-suave)',
                 }}
               >
-                Buscar outro jogador
+                {t('buscarUsuario.buscarOutro')}
               </button>
             </div>
           </motion.div>

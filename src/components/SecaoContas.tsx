@@ -1,20 +1,22 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Trash2, Key, Info, CheckCircle2, AlertCircle, Loader2, User, Sparkles, Shield, Plus } from 'lucide-react';
+import { Info, CheckCircle2, AlertCircle, Loader2, User, Sparkles, Shield, Plus, UserPlus, Trash2, Key } from 'lucide-react';
 import { useContas } from '../hooks/useContas';
 import { ContaImportada } from '../tipos';
+import { useTranslation, Trans } from 'react-i18next';
 
 export function SecaoContas() {
-  const { 
-    contas, adicionarConta, removerConta, estaCarregando, 
-    buscarContasNavegador, adicionarContasImportadas, solicitarElevacaoUAC, 
+  const { t } = useTranslation();
+  const {
+    contas, adicionarConta, removerConta, estaCarregando,
+    buscarContasNavegador, adicionarContasImportadas, solicitarElevacaoUAC,
     abrirJanelaLogin, capturarCookieApp
   } = useContas();
-  
+
   const [novoCookie, definirNovoCookie] = useState('');
   const [metodoAdicao, definirMetodoAdicao] = useState<'cookie' | 'login'>('cookie');
   const [janelaAberta, definirJanelaAberta] = useState(false);
-  
+
   const [estaAdicionando, definirEstaAdicionando] = useState(false);
   const [estaBuscandoNavegador, definirEstaBuscandoNavegador] = useState(false);
   const [precisaDeAdmin, definirPrecisaDeAdmin] = useState(false);
@@ -29,7 +31,7 @@ export function SecaoContas() {
     definirFeedback(null);
 
     const resultado = await adicionarConta(novoCookie.trim());
-    
+
     if (resultado.sucesso) {
       definirNovoCookie('');
       definirFeedback({ tipo: 'sucesso', mensagem: resultado.mensagem });
@@ -44,9 +46,9 @@ export function SecaoContas() {
     try {
       await abrirJanelaLogin();
       definirJanelaAberta(true);
-      definirFeedback({ tipo: 'sucesso', mensagem: "Janela de login aberta! Faça login lá primeiro." });
+      definirFeedback({ tipo: 'sucesso', mensagem: t('contas.feedbackSucessoJanela') });
     } catch (e) {
-      definirFeedback({ tipo: 'erro', mensagem: "Erro ao abrir janela de login." });
+      definirFeedback({ tipo: 'erro', mensagem: t('contas.feedbackErroJanela') });
     }
   };
 
@@ -55,7 +57,7 @@ export function SecaoContas() {
     definirFeedback(null);
 
     const resultado = await capturarCookieApp();
-    
+
     if (resultado.sucesso) {
       definirJanelaAberta(false);
       definirFeedback({ tipo: 'sucesso', mensagem: resultado.mensagem });
@@ -73,7 +75,7 @@ export function SecaoContas() {
     definirPrecisaDeAdmin(false);
 
     const resultado = await buscarContasNavegador();
-    
+
     if (resultado.sucesso && resultado.contas) {
       definirContasEncontradas(resultado.contas);
     } else {
@@ -88,9 +90,9 @@ export function SecaoContas() {
 
   const confirmarImportacao = async () => {
     if (!contasEncontradas) return;
-    
+
     await adicionarContasImportadas(contasEncontradas);
-    definirFeedback({ tipo: 'sucesso', mensagem: `${contasEncontradas.length} conta(s) importada(s)!` });
+    definirFeedback({ tipo: 'sucesso', mensagem: t('contas.feedbackSucessoDesc', { count: contasEncontradas.length }) });
     definirContasEncontradas(null);
     setTimeout(() => definirFeedback(null), 3000);
   };
@@ -104,10 +106,10 @@ export function SecaoContas() {
       {/* Cabeçalho */}
       <div>
         <h2 className="text-3xl font-black text-white" style={{ fontFamily: 'var(--font-heading)' }}>
-          Gerenciar Contas
+          {t('contas.titulo')}
         </h2>
         <p className="text-sm text-gray-400 mt-1">
-          Adicione suas contas via login direto ou importe seus cookies <span className="text-[var(--color-primaria)] font-mono">.ROBLOSECURITY</span>.
+          <Trans i18nKey="contas.descricao" components={{ 1: <span className="text-[var(--color-primaria)] font-mono" /> }} />
         </p>
       </div>
 
@@ -117,26 +119,24 @@ export function SecaoContas() {
           <div className="p-6 rounded-3xl glass border border-white/5 space-y-4">
             <div className="flex items-center gap-3 text-[var(--color-primaria)]">
               <UserPlus className="w-5 h-5" />
-              <h3 className="font-bold">Adicionar Conta</h3>
+              <h3 className="font-bold">{t('contas.adicionarConta')}</h3>
             </div>
 
             {/* Seletor de Método */}
             <div className="flex p-1 bg-black/20 rounded-xl border border-white/5">
               <button
                 onClick={() => definirMetodoAdicao('cookie')}
-                className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
-                  metodoAdicao === 'cookie' ? 'bg-[var(--color-primaria)] text-white shadow-lg shadow-[var(--color-primaria)]/20' : 'text-gray-500 hover:text-gray-400'
-                }`}
+                className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${metodoAdicao === 'cookie' ? 'bg-[var(--color-primaria)] text-white shadow-lg shadow-[var(--color-primaria)]/20' : 'text-gray-500 hover:text-gray-400'
+                  }`}
               >
-                Cookie
+                {t('contas.cookie')}
               </button>
               <button
                 onClick={() => definirMetodoAdicao('login')}
-                className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
-                  metodoAdicao === 'login' ? 'bg-[var(--color-primaria)] text-white shadow-lg shadow-[var(--color-primaria)]/20' : 'text-gray-500 hover:text-gray-400'
-                }`}
+                className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${metodoAdicao === 'login' ? 'bg-[var(--color-primaria)] text-white shadow-lg shadow-[var(--color-primaria)]/20' : 'text-gray-500 hover:text-gray-400'
+                  }`}
               >
-                Login Direto
+                {t('contas.loginDireto')}
               </button>
             </div>
 
@@ -161,8 +161,8 @@ export function SecaoContas() {
                       <>
                         <Sparkles className="w-6 h-6 group-hover:scale-110 transition-transform text-[var(--color-primaria)]" />
                         <div className="text-center">
-                          <span className="block">Importar do Navegador</span>
-                          <span className="text-[10px] text-[var(--color-primaria)] opacity-50 font-normal">Chrome, Edge, Firefox</span>
+                          <span className="block">{t('contas.importarNavegador')}</span>
+                          <span className="text-[10px] text-[var(--color-primaria)] opacity-50 font-normal">{t('contas.navegadoresSuportados')}</span>
                         </div>
                       </>
                     )}
@@ -170,17 +170,17 @@ export function SecaoContas() {
 
                   <div className="flex items-center gap-3 py-1">
                     <div className="h-px flex-1 bg-white/5" />
-                    <span className="text-[10px] font-bold text-gray-600 uppercase">ou manual</span>
+                    <span className="text-[10px] font-bold text-gray-600 uppercase">{t('contas.ouManual')}</span>
                     <div className="h-px flex-1 bg-white/5" />
                   </div>
 
                   <form onSubmit={aoAdicionarPorCookie} className="space-y-4">
                     <div className="space-y-2">
-                       <div className="relative group">
+                      <div className="relative group">
                         <textarea
                           value={novoCookie}
                           onChange={(e) => definirNovoCookie(e.target.value)}
-                          placeholder="_|WARNING:-DO-NOT-SHARE-..."
+                          placeholder={t('contas.placeholderCookie')}
                           className="w-full h-24 bg-black/40 border border-white/5 rounded-2xl p-4 text-xs font-mono text-white/70 
                                    focus:border-[var(--color-primaria)]/50 focus:ring-1 focus:ring-[var(--color-primaria)]/20 outline-none transition-all resize-none"
                         />
@@ -197,7 +197,7 @@ export function SecaoContas() {
                                text-white font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       {estaAdicionando ? <Loader2 className="w-4 h-4 animar-girar" /> : <Plus className="w-4 h-4" />}
-                      Adicionar Cookie
+                      {t('contas.adicionarCookie')}
                     </button>
                   </form>
                 </motion.div>
@@ -213,12 +213,12 @@ export function SecaoContas() {
                     <div className="p-4 rounded-2xl bg-black/20 border border-white/5 space-y-3">
                       <div className="flex items-center gap-2 text-[var(--color-primaria)]">
                         <Info className="w-4 h-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Como funciona?</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{t('contas.comoFunciona')}</span>
                       </div>
                       <ol className="text-[11px] text-gray-400 leading-relaxed list-none space-y-1.5">
-                        <li className="flex items-start gap-2"><span className="text-[var(--color-primaria)] font-bold">1.</span> Clique em "Abrir Janela" e faça login no Roblox.</li>
-                        <li className="flex items-start gap-2"><span className="text-[var(--color-primaria)] font-bold">2.</span> Após chegar na tela inicial, <strong className="text-white">feche a janela</strong>.</li>
-                        <li className="flex items-start gap-2"><span className="text-[var(--color-primaria)] font-bold">3.</span> Clique em "Finalizar Captura".</li>
+                        <li className="flex items-start gap-2"><span className="text-[var(--color-primaria)] font-bold">1.</span> {t('contas.passo1')}</li>
+                        <li className="flex items-start gap-2"><span className="text-[var(--color-primaria)] font-bold">2.</span> <Trans i18nKey="contas.passo2" components={{ 1: <strong className="text-white" /> }} /></li>
+                        <li className="flex items-start gap-2"><span className="text-[var(--color-primaria)] font-bold">3.</span> {t('contas.passo3')}</li>
                       </ol>
                     </div>
 
@@ -228,7 +228,7 @@ export function SecaoContas() {
                         className="w-full py-4 rounded-2xl bg-[var(--color-primaria)] hover:bg-[var(--color-primaria-hover)] text-white font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[var(--color-primaria)]/20"
                       >
                         <Sparkles className="w-5 h-5" />
-                        Abrir Janela de Login
+                        {t('contas.abrirJanelaLogin')}
                       </button>
                     ) : (
                       <div className="space-y-3">
@@ -242,15 +242,15 @@ export function SecaoContas() {
                           ) : (
                             <CheckCircle2 className="w-5 h-5" />
                           )}
-                          Finalizar Captura
+                          {t('contas.finalizarCaptura')}
                         </button>
-                        
+
                         <button
                           onClick={aoAbrirLogin}
                           disabled={estaAdicionando}
                           className="w-full py-2 text-[10px] text-gray-500 hover:text-gray-300 font-bold uppercase tracking-widest transition-all cursor-pointer"
                         >
-                          Reabrir Janela
+                          {t('contas.reabrirJanela')}
                         </button>
                       </div>
                     )}
@@ -258,7 +258,7 @@ export function SecaoContas() {
 
                   <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
                     <p className="text-[9px] text-blue-300/60 leading-tight text-center">
-                      * Este é o método mais seguro e compatível com todas as contas.
+                      {t('contas.dicaLoginSeguro')}
                     </p>
                   </div>
                 </motion.div>
@@ -272,8 +272,8 @@ export function SecaoContas() {
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   className={`flex items-start gap-3 p-3 rounded-xl border text-xs
-                    ${feedback.tipo === 'sucesso' 
-                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                    ${feedback.tipo === 'sucesso'
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                       : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}
                 >
                   {feedback.tipo === 'sucesso' ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
@@ -293,16 +293,16 @@ export function SecaoContas() {
                 >
                   <div className="flex items-center gap-2 text-amber-500">
                     <Shield className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Permissão Necessária</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">{t('contas.permissaoNecessaria')}</span>
                   </div>
                   <p className="text-[10px] text-amber-500/80 leading-relaxed">
-                    Navegadores modernos (Comet, Brave, etc) exigem privilégios de administrador para que possamos ler os dados de login com segurança.
+                    {t('contas.descPermissao')}
                   </p>
                   <button
                     onClick={() => solicitarElevacaoUAC()}
                     className="w-full py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
                   >
-                    Reiniciar como Administrador
+                    {t('contas.reiniciarAdmin')}
                   </button>
                 </motion.div>
               )}
@@ -318,9 +318,9 @@ export function SecaoContas() {
                   className="p-4 rounded-2xl bg-[var(--color-primaria)]/10 border border-[var(--color-primaria)]/20 space-y-4"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[var(--color-primaria)] opacity-80">Contas Detectadas</span>
+                    <span className="text-xs font-bold text-[var(--color-primaria)] opacity-80">{t('contas.contasDetectadas')}</span>
                     <span className="text-[10px] bg-[var(--color-primaria)]/20 px-2 py-0.5 rounded-full text-[var(--color-primaria)] opacity-80">
-                      {contasEncontradas.length} total
+                      {t('contas.total', { count: contasEncontradas.length })}
                     </span>
                   </div>
 
@@ -341,13 +341,13 @@ export function SecaoContas() {
                       onClick={() => definirContasEncontradas(null)}
                       className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 text-xs font-bold transition-all cursor-pointer"
                     >
-                      Cancelar
+                      {t('contas.cancelar')}
                     </button>
                     <button
                       onClick={confirmarImportacao}
                       className="flex-[2] py-2 rounded-xl bg-[var(--color-primaria)] hover:bg-[var(--color-primaria-hover)] text-white text-xs font-bold transition-all shadow-lg shadow-[var(--shadow-glow)] cursor-pointer"
                     >
-                      Adicionar Todas
+                      {t('contas.adicionarTodas')}
                     </button>
                   </div>
                 </motion.div>
@@ -358,7 +358,7 @@ export function SecaoContas() {
               <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
                 <Info className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                 <p className="text-[10px] text-amber-500/70 leading-relaxed">
-                  <strong>Dica:</strong> Para pegar seu cookie, abra o Roblox.com, pressione F12, vá em Application {'>'} Cookies e copie o valor de <code>.ROBLOSECURITY</code>.
+                  <Trans i18nKey="contas.dicaCookie" components={{ 1: <strong />, 3: <code /> }} />
                 </p>
               </div>
             </div>
@@ -369,7 +369,7 @@ export function SecaoContas() {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 ml-1">
-              Contas Salvas ({contas.length})
+              {t('contas.contasSalvas', { count: contas.length })}
             </h3>
           </div>
 
@@ -382,8 +382,8 @@ export function SecaoContas() {
               <div className="p-4 rounded-full bg-[var(--color-primaria)]/5 mb-4">
                 <User className="w-8 h-8 text-[var(--color-primaria)]/20" />
               </div>
-              <p className="text-sm font-bold text-white/40">Nenhuma conta adicionada</p>
-              <p className="text-xs text-white/20 mt-1">Suas contas salvas aparecerão aqui para lançamento rápido.</p>
+              <p className="text-sm font-bold text-white/40">{t('contas.nenhumaConta')}</p>
+              <p className="text-xs text-white/20 mt-1">{t('contas.descNenhumaConta')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -404,8 +404,8 @@ export function SecaoContas() {
 
                     <div className="relative">
                       <div className="w-14 h-14 rounded-2xl bg-[var(--color-primaria)]/10 border border-[var(--color-primaria)]/20 overflow-hidden">
-                        <img 
-                          src={conta.usuario.avatar_url} 
+                        <img
+                          src={conta.usuario.avatar_url}
                           alt={conta.usuario.nome}
                           className="w-full h-full object-cover"
                         />
@@ -425,16 +425,16 @@ export function SecaoContas() {
                         @{conta.usuario.nome}
                       </p>
                       <div className="flex items-center gap-2 mt-2">
-                         <span className="px-2 py-0.5 rounded-full bg-white/5 text-[9px] text-white/40 border border-white/5">
-                            ID: {conta.usuario.id}
-                         </span>
+                        <span className="px-2 py-0.5 rounded-full bg-white/5 text-[9px] text-white/40 border border-white/5">
+                          ID: {conta.usuario.id}
+                        </span>
                       </div>
                     </div>
 
                     <button
                       onClick={() => removerConta(conta.id)}
                       className="p-2 rounded-xl bg-white/5 hover:bg-rose-500/20 text-white/20 hover:text-rose-400 transition-all cursor-pointer border border-transparent hover:border-rose-500/30"
-                      title="Remover Conta"
+                      title={t('contas.removerConta')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
