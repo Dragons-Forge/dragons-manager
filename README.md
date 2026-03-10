@@ -25,7 +25,7 @@ O Roblox padrão detecta se o jogo já está aberto procurando por um Mutex espe
 
 \`\`\`bash
 # 1. Clone o repositório
-git clone https://github.com/SeuUsuario/dragons-manager.git
+https://github.com/Dragons-Forge/dragons-manager.git
 
 # 2. Instale as dependências
 npm install
