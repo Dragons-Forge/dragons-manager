@@ -8,6 +8,10 @@ interface BarraLateralProps {
   secaoAtiva: SecaoAtiva;
   aoSelecionarSecao: (secao: SecaoAtiva) => void;
   quantidadeInstancias: number;
+  versaoAtual: string;
+  versaoDisponivel: string | null;
+  temNovaVersao: boolean;
+  urlRelease: string;
 }
 
 const itensNavegacao = [
@@ -43,7 +47,7 @@ const itensNavegacao = [
   },
 ] as const;
 
-export function BarraLateral({ secaoAtiva, aoSelecionarSecao, quantidadeInstancias }: BarraLateralProps) {
+export function BarraLateral({ secaoAtiva, aoSelecionarSecao, quantidadeInstancias, versaoAtual, versaoDisponivel, temNovaVersao, urlRelease }: BarraLateralProps) {
   const { t, i18n } = useTranslation();
 
   const alterarIdioma = () => {
@@ -68,7 +72,9 @@ export function BarraLateral({ secaoAtiva, aoSelecionarSecao, quantidadeInstanci
             <h1 className="text-sm font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>
               MultiRoblox
             </h1>
-            <p className="text-xs" style={{ color: 'var(--color-texto-suave)' }}>Manager v1.0</p>
+            <p className="text-xs" style={{ color: 'var(--color-texto-suave)' }}>
+              Manager v{versaoAtual}
+            </p>
           </div>
         </div>
       </div>
@@ -142,6 +148,24 @@ export function BarraLateral({ secaoAtiva, aoSelecionarSecao, quantidadeInstanci
             {i18n.language}
           </span>
         </button>
+
+        <div className="rounded-xl p-3 border" style={{ borderColor: 'var(--color-borda)', background: 'rgba(255,255,255,0.02)' }}>
+          <div className="flex items-center justify-between text-xs text-white/70">
+            <span>Versão</span>
+            <span className="font-bold">v{versaoAtual}</span>
+          </div>
+          {temNovaVersao && versaoDisponivel && (
+            <a
+              href={urlRelease}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-200 hover:bg-amber-500/15 transition-colors cursor-pointer"
+            >
+              <span>Nova: v{versaoDisponivel}</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </a>
+          )}
+        </div>
 
         <div
           className="rounded-xl p-3 text-center"
