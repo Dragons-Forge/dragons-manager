@@ -25,7 +25,7 @@ Standard Roblox detects if the game is already open by looking for a specific Wi
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/YourUsername/dragons-manager.git
+https://github.com/Dragons-Forge/dragons-manager.git
 
 # 2. Install dependencies
 npm install
