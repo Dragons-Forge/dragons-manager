@@ -39,4 +39,4 @@ npm run tauri build
 
 ## 📚 Credits / Inspiration
 
-Based on the original logic of [MultiRoblox](https://github.com/Dashbloxx/MultiRoblox) by Dashbloxx and built with inspiration and basis from **RAM_Source**. Rebuilt with an absolute focus on UI/UX, stability, robustness, and new visual tools.
+Based on the original logic of [MultiRoblox](https://github.com/Dashbloxx/MultiRoblox) by Dashbloxx and built with inspiration and basis from [RAM_Source](https://github.com/ic3w0lf22/Roblox-Account-Manager). Rebuilt with an absolute focus on UI/UX, stability, robustness, and new visual tools.
