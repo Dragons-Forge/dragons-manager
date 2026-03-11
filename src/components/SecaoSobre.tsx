@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Github, Heart, Shield, Zap, Users, Gamepad2, UserCircle } from 'lucide-react';
+import { Heart, Shield, Zap, Users, Gamepad2, UserCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const funcionalidades = [
@@ -118,32 +118,9 @@ export function SecaoSobre() {
         style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)' }}
       >
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-xs" style={{ color: 'var(--cor-texto-suave)' }}>
-          <div className="flex items-center gap-1.5">
-            <span>{t('sobre.baseadoEm')}:</span>
-            <a
-              href="https://github.com/Dashbloxx/MultiRoblox"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 hover:text-[var(--color-primaria)] transition-colors duration-200"
-              style={{ color: 'var(--cor-primaria)' }}
-            >
-              <Github className="w-3 h-3" />
-              MultiRoblox
-            </a>
-          </div>
-          <div className="hidden sm:block w-1 h-1 rounded-full bg-white/10" />
-          <div className="flex items-center gap-1.5">
-            <span>{t('sobre.inspiracao')}:</span>
-            <a
-              href="https://github.com/Babyhamsta/RAM_Source"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 hover:text-[var(--color-primaria)] transition-colors duration-200 font-medium"
-              style={{ color: 'var(--cor-primaria)' }}
-            >
-              <Github className="w-3 h-3" />
-              RAM_Source
-            </a>
+          <div className="flex flex-col gap-1 text-sm text-[var(--color-texto-suave)]">
+            <span>{t('sobre.baseadoEm')}</span>
+            <span className="text-xs text-[var(--color-texto-apagado)]">Projeto autoral desenvolvido pela Dragons Forge.</span>
           </div>
         </div>
         <p className="text-xs mt-1 flex items-center justify-center gap-1" style={{ color: 'var(--cor-texto-apagado)' }}>
