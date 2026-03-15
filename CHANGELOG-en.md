@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.2.2] - 2026-03-15
+### Added
+- Automatic anticrash: relaunches open instances preserving account/client, now robust for Blox Fruits (Sea 2/Sea 3).
 ### Fixed
 - Anticrash now relaunches Blox Fruits correctly in Sea 2/Sea 3 using the root place, avoiding error 524.
 - Instance version text now shows only the substring starting at "version" to prevent layout overflow.

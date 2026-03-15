@@ -6,6 +6,8 @@ O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
 ## [1.2.2] - 2026-03-15
+### Adicionado
+- Funcionalidade de anticrash automática: relança instâncias abertas, preservando conta/cliente, agora robusta para Blox Fruits (mares 2/3).
 ### Corrigido
 - Anticrash agora relança corretamente Blox Fruits nos mares 2 e 3 usando o place raiz, evitando erro 524.
 - Formatação da versão exibida em instâncias, mostrando apenas o trecho a partir de "version" para não quebrar o layout.
