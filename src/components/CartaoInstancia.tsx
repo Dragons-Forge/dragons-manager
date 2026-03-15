@@ -32,6 +32,16 @@ export function CartaoInstancia({ instancia, numero, aoFechar, eFechando, eEncer
 
   const contaVinculada = contas.find(c => c.id === instancia.conta_id);
 
+  const versaoFormatada = (() => {
+    if (!instancia.versao) return undefined;
+    const versaoBruta = instancia.versao;
+    const idx = versaoBruta.toLowerCase().lastIndexOf('version');
+    if (idx >= 0) {
+      return versaoBruta.slice(idx);
+    }
+    return versaoBruta;
+  })();
+
   return (
     <motion.div
       layout
@@ -118,15 +128,40 @@ export function CartaoInstancia({ instancia, numero, aoFechar, eFechando, eEncer
           <span className="font-medium" style={{ color: 'var(--color-sucesso)' }}>{t('instancias.executando')}</span>
         </div>
 
-        {instancia.nome_jogo && (
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1.5" style={{ color: 'var(--color-texto-suave)' }}>
+            <Activity className="w-3.5 h-3.5" />
+            <span>Versão</span>
+          </div>
+          <span className="font-medium text-white" title={versaoFormatada || instancia.versao || 'Versão indisponível'}>
+            {versaoFormatada ?? instancia.versao ?? 'N/D'}
+          </span>
+        </div>
+
+        {(instancia.nome_jogo || instancia.place_id || instancia.universe_id) && (
           <div className="flex items-center justify-between text-xs pt-2 border-t border-white/5">
             <div className="flex items-center gap-1.5" style={{ color: 'var(--color-primaria)' }}>
               <Gamepad2 className="w-3.5 h-3.5" />
               <span>{t('instancias.jogando')}</span>
             </div>
-            <span className="font-bold text-white truncate max-w-[120px]" title={instancia.nome_jogo}>
-              {instancia.nome_jogo}
-            </span>
+            <div className="text-right max-w-[140px] truncate text-white">
+              {(instancia.nome_jogo || instancia.place_id || instancia.universe_id) && (
+                <>
+                  {instancia.nome_jogo && (
+                    <div className="font-bold truncate" title={instancia.nome_jogo}>
+                      {instancia.nome_jogo}
+                    </div>
+                  )}
+                  {(instancia.place_id || instancia.universe_id) && (
+                    <div className="text-[10px] text-white/60 font-mono truncate">
+                      {instancia.place_id ? `Place: ${instancia.place_id}` : ''}
+                      {instancia.place_id && instancia.universe_id ? ' · ' : ''}
+                      {instancia.universe_id ? `Uni: ${instancia.universe_id}` : ''}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>

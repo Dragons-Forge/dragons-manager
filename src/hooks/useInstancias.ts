@@ -130,14 +130,16 @@ export function useInstancias() {
     return () => clearInterval(intervalo);
   }, [atualizarInstancias, atualizarClientes]);
 
-  const lancarNovaInstancia = useCallback(async (config?: { caminho?: string, ticket?: string, contaId?: string, userId?: number }): Promise<{sucesso: boolean; mensagem: string}> => {
+  const lancarNovaInstancia = useCallback(async (config?: { caminho?: string, ticket?: string, contaId?: string, userId?: number, placeId?: number, jobId?: string }): Promise<{sucesso: boolean; mensagem: string}> => {
     try {
       const caminhoParaUsar = config?.caminho || caminhoCustomizado || null;
       const mensagem = await invoke<string>('lancar_roblox', { 
         caminhoCustomizado: caminhoParaUsar,
         ticket: config?.ticket || null,
         contaId: config?.contaId || null,
-        userId: config?.userId || null
+        userId: config?.userId || null,
+        placeId: config?.placeId || null,
+        jobId: config?.jobId || null
       });
       // Atualiza a lista após lançar
       setTimeout(atualizarInstancias, 1500);

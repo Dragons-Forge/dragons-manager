@@ -10,6 +10,9 @@ export interface InfoInstancia {
   place_id?: number;
   universe_id?: number;
   nome_jogo?: string;
+  versao?: string;
+  caminho_cliente?: string;
+  job_id?: string;
 }
 
 export interface ClienteRoblox {

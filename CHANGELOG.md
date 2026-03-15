@@ -5,6 +5,12 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.2.2] - 2026-03-15
+### Corrigido
+- Anticrash agora relança corretamente Blox Fruits nos mares 2 e 3 usando o place raiz, evitando erro 524.
+- Formatação da versão exibida em instâncias, mostrando apenas o trecho a partir de "version" para não quebrar o layout.
+- Extração de place/universe/jobId refinada para relançamentos estáveis e sem loops de permissão.
+
 ## [1.2.0] - 2026-03-10
 ### Adicionado
 - Verificação automática de nova versão via releases do GitHub, com comparação semântica.

@@ -7,10 +7,93 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri::{Manager, State};
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 pub struct InfoProcessoConta {
     pub conta_id: String,
     pub user_id: Option<u64>,
+}
+
+fn processo_exemplo_exe() -> Option<PathBuf> {
+    let mut sistema = System::new_all();
+    sistema.refresh_all();
+    sistema
+        .processes()
+        .values()
+        .find_map(|p| p.exe().map(|path| path.to_path_buf()))
+}
+
+fn obter_ultimo_place_universe_logs(log_dirs: &[PathBuf]) -> Option<(u64, u64)> {
+    let mut entries: Vec<_> = Vec::new();
+    for dir in log_dirs {
+        if !dir.exists() { continue; }
+        if let Ok(iter) = std::fs::read_dir(dir) {
+            for e in iter.flatten() {
+                entries.push(e);
+            }
+        }
+    }
+
+    if entries.is_empty() {
+        return None;
+    }
+
+    entries.sort_by_key(|e| e.file_name());
+    entries.reverse();
+
+    let extrair_id = |label: &str, linha: &str| -> Option<u64> {
+        if let Some(idx) = linha.find(label) {
+            let slice = &linha[idx + label.len()..];
+            let token = slice
+                .split(|c: char| !c.is_ascii_digit())
+                .find(|s| !s.is_empty());
+            if let Some(tok) = token {
+                return tok.parse::<u64>().ok();
+            }
+        }
+        None
+    };
+
+    for entry in entries {
+        if let Ok(meta) = entry.metadata() {
+            if meta.is_file() {
+                if let Ok(conteudo) = std::fs::read_to_string(entry.path()) {
+                    for linha in conteudo.lines().rev() {
+                        let linha_lower = linha.to_lowercase();
+                        if linha_lower.contains("placeid") && linha_lower.contains("universeid") {
+                            let pid_log = extrair_id("placeid", &linha_lower);
+                            let uid_log = extrair_id("universeid", &linha_lower);
+
+                            if let (Some(pid), Some(uid)) = (pid_log, uid_log) {
+                                #[cfg(debug_assertions)]
+                                println!("[DEBUG] Fallback ultimo log place/universe: {} / {}", pid, uid);
+                                return Some((pid, uid));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+fn extrair_job_id_cmd(args: &[String]) -> Option<String> {
+    // Procura argumento ou URL contendo gameId=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+    for arg in args {
+        if arg.contains("gameid=") || arg.contains("GameId=") {
+            if let Some(pos) = arg.to_lowercase().find("gameid=") {
+                let slice = &arg[pos + "gameid=".len()..];
+                let token = slice
+                    .split(|c: char| c == '&' || c == '"' || c == '\'' || c == ' ')
+                    .find(|s| !s.is_empty());
+                if let Some(tok) = token {
+                    return Some(tok.to_string());
+                }
+            }
+        }
+    }
+    None
 }
 
 // Estado Global para mapear PID do processo -> Informações da Conta
@@ -24,11 +107,56 @@ pub struct CacheJogos(pub Mutex<HashMap<u64, String>>);
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 
+fn caminho_mapa_pids_compartilhado() -> PathBuf {
+    let local_app_data_origin = std::env::var("LOCALAPPDATA").unwrap_or_else(|_| "C:\\".to_string());
+    let mut base = PathBuf::from(&local_app_data_origin);
+    base.push("MultiRobloxManager");
+    let _ = std::fs::create_dir_all(&base);
+    base.push("pids_contas.json");
+    base
+}
+
+fn ler_mapa_pids_compartilhado() -> HashMap<u32, InfoProcessoConta> {
+    let caminho = caminho_mapa_pids_compartilhado();
+    if let Ok(conteudo) = std::fs::read_to_string(&caminho) {
+        serde_json::from_str(&conteudo).unwrap_or_default()
+    } else {
+        HashMap::new()
+    }
+}
+
+fn salvar_mapa_pids_compartilhado(mapa: &HashMap<u32, InfoProcessoConta>) {
+    let caminho = caminho_mapa_pids_compartilhado();
+    if let Ok(json) = serde_json::to_string_pretty(mapa) {
+        let _ = std::fs::write(caminho, json);
+    }
+}
+
+fn mapa_pids_inicial() -> MapaPidsContas {
+    let persistido = ler_mapa_pids_compartilhado();
+    MapaPidsContas(Mutex::new(persistido))
+}
+
+fn extrair_place_id_cmd(args: &[String]) -> Option<u64> {
+    for arg in args {
+        if arg.contains("PlaceLauncher.ashx") || arg.contains("placeId=") {
+            if let Some(idx) = arg.to_lowercase().find("placeid=") {
+                let slice = &arg[idx + 8..];
+                let fim = slice.find('&').unwrap_or(slice.len());
+                if let Ok(pid) = slice[..fim].trim().parse::<u64>() {
+                    return Some(pid);
+                }
+            }
+        }
+    }
+    None
+}
+
 // ─────────────────────────────────────────────
 // Structs de dados
 // ─────────────────────────────────────────────
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct InfoInstancia {
     pub pid: u32,
     pub nome_processo: String,
@@ -37,6 +165,9 @@ pub struct InfoInstancia {
     pub place_id: Option<u64>,
     pub universe_id: Option<u64>,
     pub nome_jogo: Option<String>,
+    pub versao: Option<String>,
+    pub caminho_cliente: Option<String>,
+    pub job_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -268,7 +399,7 @@ async fn lancar_roblox(
 
     // Nova Estratégia de Redirecionamento Dinâmico (Account Isolation Swap)
     if let Some(ref id) = conta_id {
-        let local_app_data_origin = std::env::var("LOCALAPPDATA").unwrap_or_else(|_| "C:\\".to_string());
+        let local_app_data_origin = std::env::var("LOCALAPPDATA").unwrap_or_else(|_| "C:\\\\".to_string());
         let global_roblox_dir = std::path::PathBuf::from(&local_app_data_origin).join("Roblox");
         let global_ls_dir = global_roblox_dir.join("LocalStorage");
         let global_ls_backup = global_roblox_dir.join("LocalStorage_GlobalBackupMAN");
@@ -314,7 +445,7 @@ async fn lancar_roblox(
     cmd.args(&args);
 
     if let Some(ref id) = conta_id {
-        let local_app_data_origin = std::env::var("LOCALAPPDATA").unwrap_or_else(|_| "C:\\".to_string());
+        let local_app_data_origin = std::env::var("LOCALAPPDATA").unwrap_or_else(|_| "C:\\\\".to_string());
         let id_clean = id.replace("-", "");
         let mut isolated_root = std::path::PathBuf::from(&local_app_data_origin);
         isolated_root.push("MultiRobloxManager");
@@ -332,30 +463,45 @@ async fn lancar_roblox(
         .map_err(|erro| format!("Erro ao lançar o Roblox: {}", erro))?;
         
     let pid = child.id();
-    
+
+    if let Some(ref cid) = conta_id {
+        let mut mapa = mapa_state.0.lock().unwrap_or_else(|e| e.into_inner());
+        mapa.insert(pid, InfoProcessoConta {
+            conta_id: cid.clone(),
+            user_id,
+        });
+        salvar_mapa_pids_compartilhado(&mapa);
+    }
+
     if conta_id.is_some() {
-        let local_app_data_origin = std::env::var("LOCALAPPDATA").unwrap_or_else(|_| "C:\\".to_string());
+        let local_app_data_origin = std::env::var("LOCALAPPDATA").unwrap_or_else(|_| "C:\\\\".to_string());
         let global_roblox_dir = std::path::PathBuf::from(&local_app_data_origin).join("Roblox");
         let global_ls_dir = global_roblox_dir.join("LocalStorage");
         let global_ls_backup = global_roblox_dir.join("LocalStorage_GlobalBackupMAN");
 
         tokio::spawn(async move {
             tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+
+            // Se ainda houver Roblox rodando, não desmonta o redirecionamento
+            let mut sistema = sysinfo::System::new_all();
+            sistema.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+            let ainda_rodando = sistema.processes().values().any(|p| {
+                let nome = p.name().to_string_lossy().to_lowercase();
+                nome.contains("robloxplayer")
+            });
+            if ainda_rodando {
+                #[cfg(debug_assertions)]
+                println!("[DEBUG] Mantendo redirecionamento: Roblox ainda em execução");
+                return;
+            }
+
+            #[cfg(debug_assertions)]
             println!("[DEBUG] Desativando redirecionamento...");
             let _ = std::fs::remove_dir(&global_ls_dir);
             if global_ls_backup.exists() {
                 let _ = std::fs::rename(&global_ls_backup, &global_ls_dir);
             }
         });
-    }
-
-    if let Some(id) = conta_id {
-        if let Ok(mut mapa) = mapa_state.0.lock() {
-            mapa.insert(pid, InfoProcessoConta {
-                conta_id: id,
-                user_id,
-            });
-        }
     }
 
     Ok(format!("Lançado com sucesso (PID: {})", pid))
@@ -366,58 +512,70 @@ struct InfoJogoLog {
     universe_id: u64,
 }
 
-/// Escaneia os logs recentes do Roblox para mapear UserId -> PlaceId/UniverseId
-fn obter_mapeamento_jogos_logs() -> HashMap<u64, InfoJogoLog> {
-    let mut mapeamento = HashMap::new();
-    let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_else(|_| "C:\\".to_string());
-    let log_dir = std::path::Path::new(&local_app_data).join("Roblox").join("logs");
+/// Escaneia os logs recentes do Roblox para mapear UserId -> PlaceId/UniverseId}
 
-    if !log_dir.exists() {
+fn obter_mapeamento_jogos_logs(log_dirs: &[PathBuf]) -> HashMap<u64, InfoJogoLog> {
+    let mut mapeamento = HashMap::new();
+
+    let mut logs: Vec<std::fs::DirEntry> = Vec::new();
+    for dir in log_dirs {
+        if !dir.exists() { continue; }
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            logs.extend(entries.filter_map(|e| e.ok()).filter(|e| e.path().extension().map_or(false, |ext| ext == "log")));
+        }
+    }
+
+    if logs.is_empty() {
         return mapeamento;
     }
 
-    if let Ok(entries) = std::fs::read_dir(log_dir) {
-        let mut logs: Vec<_> = entries
-            .filter_map(|e| e.ok())
-            .filter(|e| e.path().extension().map_or(false, |ext| ext == "log"))
-            .collect();
+    logs.sort_by(|a, b| {
+        b.metadata().and_then(|m| m.modified()).unwrap_or(std::time::SystemTime::UNIX_EPOCH)
+            .cmp(&a.metadata().and_then(|m| m.modified()).unwrap_or(std::time::SystemTime::UNIX_EPOCH))
+    });
 
-        // Ordena por data de modificação (mais recentes primeiro)
-        logs.sort_by(|a, b| {
-            b.metadata().and_then(|m| m.modified()).unwrap_or(std::time::SystemTime::UNIX_EPOCH)
-                .cmp(&a.metadata().and_then(|m| m.modified()).unwrap_or(std::time::SystemTime::UNIX_EPOCH))
-        });
+    let limite_tempo = std::time::SystemTime::now()
+        .checked_sub(std::time::Duration::from_secs(300))
+        .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
 
-        // Analisa os 10 logs mais recentes
-        for entry in logs.iter().take(10) {
-            if let Ok(conteudo) = std::fs::read_to_string(entry.path()) {
-                // Procurar por Report game_join_loadtime que tem as 3 infos juntas
-                // Formato: placeid:(\d+), ... universeid:(\d+), ... userid:(\d+)
-                for linha in conteudo.lines().rev() {
-                    if linha.contains("Report game_join_loadtime") {
-                        let mut pid_log = None;
-                        let mut uid_log = None;
-                        let mut user_log = None;
+    for entry in logs.iter().take(30) {
+        if let Ok(meta) = entry.metadata() {
+            if let Ok(modificado) = meta.modified() {
+                if modificado < limite_tempo {
+                    continue; // pula logs antigos para evitar cache de jogos antigos
+                }
+            }
+        }
 
-                        // Parse mais robusto buscando os campos no texto
-                        for parte in linha.split(',') {
-                            let parte = parte.trim();
-                            if parte.contains("placeid:") {
-                                pid_log = parte.split(':').nth(1).and_then(|v| v.trim().parse::<u64>().ok());
-                            } else if parte.contains("universeid:") {
-                                uid_log = parte.split(':').nth(1).and_then(|v| v.trim().parse::<u64>().ok());
-                            } else if parte.contains("userid:") {
-                                user_log = parte.split(':').nth(1).and_then(|v| v.trim().parse::<u64>().ok());
+        if let Ok(conteudo) = std::fs::read_to_string(entry.path()) {
+            for linha in conteudo.lines().rev() {
+                let linha_lower = linha.to_lowercase();
+                if linha_lower.contains("report game_join_loadtime") {
+                    let extrair_id = |label: &str, linha: &str| -> Option<u64> {
+                        if let Some(idx) = linha.find(label) {
+                            let slice = &linha[idx + label.len()..];
+                            let token = slice
+                                .split(|c: char| !c.is_ascii_digit())
+                                .find(|s| !s.is_empty());
+                            if let Some(tok) = token {
+                                return tok.parse::<u64>().ok();
                             }
                         }
+                        None
+                    };
 
-                        if let (Some(pid), Some(uid), Some(user)) = (pid_log, uid_log, user_log) {
-                            if !mapeamento.contains_key(&user) {
-                                mapeamento.insert(user, InfoJogoLog {
-                                    place_id: pid,
-                                    universe_id: uid,
-                                });
-                            }
+                    let pid_log = extrair_id("placeid", &linha_lower);
+                    let uid_log = extrair_id("universeid", &linha_lower);
+                    let user_log = extrair_id("userid", &linha_lower);
+
+                    if let (Some(pid), Some(uid), Some(user)) = (pid_log, uid_log, user_log) {
+                        if !mapeamento.contains_key(&user) {
+                            mapeamento.insert(user, InfoJogoLog {
+                                place_id: pid,
+                                universe_id: uid,
+                            });
+                            #[cfg(debug_assertions)]
+                            println!("[DEBUG] map logs user {} place {} uni {}", user, pid, uid);
                         }
                     }
                 }
@@ -428,26 +586,78 @@ fn obter_mapeamento_jogos_logs() -> HashMap<u64, InfoJogoLog> {
     mapeamento
 }
 
-/// Busca o nome do jogo na API do Roblox
-async fn buscar_nome_jogo(place_id: u64) -> Result<String, String> {
-    let url = format!("https://games.roblox.com/v1/games/multiget-place-details?placeIds={}", place_id);
+fn construir_dirs_logs(exe_path: Option<&PathBuf>) -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+    if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
+        dirs.push(std::path::Path::new(&local_app_data).join("Roblox").join("logs"));
+    }
+    if let Some(exe) = exe_path {
+        if let Some(parent) = exe.parent() {
+            dirs.push(parent.join("logs"));
+            if let Some(pp) = parent.parent() {
+                dirs.push(pp.join("logs"));
+                if let Some(ppp) = pp.parent() {
+                    dirs.push(ppp.join("logs"));
+                }
+            }
+        }
+    }
+    #[cfg(debug_assertions)]
+    println!("[DEBUG] Dirs de logs considerados: {:?}", dirs);
+    dirs
+}
+
+/// Busca o nome do jogo sem exigir cookie, preferindo universeId quando disponível
+async fn buscar_nome_jogo(place_id: u64, universe_id: Option<u64>) -> Result<String, String> {
     let cliente = reqwest::Client::new();
-    let resposta: serde_json::Value = cliente.get(&url)
+
+    // 1) Tenta via universeId (API pública)
+    if let Some(uid) = universe_id {
+        let url_universe = format!("https://games.roblox.com/v1/games?universeIds={}", uid);
+        let resp_raw = cliente.get(&url_universe)
+            .header("User-Agent", "MultiRobloxManager/1.0")
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+        let status = resp_raw.status();
+        let resp: serde_json::Value = resp_raw.json().await.map_err(|e| e.to_string())?;
+
+        if let Some(data) = resp["data"].as_array() {
+            if let Some(first) = data.first() {
+                if let Some(name) = first["name"].as_str() {
+                    #[cfg(debug_assertions)]
+                    println!("[DEBUG] Nome do jogo (universe {}) resolvido: {}", uid, name);
+                    return Ok(name.to_string());
+                }
+            }
+        }
+
+        #[cfg(debug_assertions)]
+        println!("[DEBUG] Falha ao obter nome via universeId (status: {:?}) uid {} resp {:?}", status, uid, resp);
+    }
+
+    // 2) Fallback via placeId multiget-place-details (pode exigir cookie; usamos só se universe faltou ou falhou)
+    let url_place = format!("https://games.roblox.com/v1/games/multiget-place-details?placeIds={}", place_id);
+    let resp_raw = cliente.get(&url_place)
         .header("User-Agent", "MultiRobloxManager/1.0")
         .send()
         .await
-        .map_err(|e| e.to_string())?
-        .json()
-        .await
         .map_err(|e| e.to_string())?;
+    let status = resp_raw.status();
+    let resp: serde_json::Value = resp_raw.json().await.map_err(|e| e.to_string())?;
 
-    if let Some(data) = resposta.as_array() {
+    if let Some(data) = resp.as_array() {
         if let Some(first) = data.first() {
             if let Some(name) = first["name"].as_str() {
+                #[cfg(debug_assertions)]
+                println!("[DEBUG] Nome do jogo (place {}) resolvido: {}", place_id, name);
                 return Ok(name.to_string());
             }
         }
     }
+
+    #[cfg(debug_assertions)]
+    println!("[DEBUG] Falha ao obter nome (status: {:?}) place {} resp {:?}", status, place_id, resp);
 
     Ok(format!("Place #{}", place_id))
 }
@@ -461,7 +671,16 @@ async fn listar_instancias(
     let mut sistema = System::new_all();
     sistema.refresh_all();
     
-    let mapeamento_logs = obter_mapeamento_jogos_logs();
+    let dirs_logs = construir_dirs_logs(processo_exemplo_exe().as_ref());
+    let mapeamento_logs = obter_mapeamento_jogos_logs(&dirs_logs);
+    {
+        // Sincroniza o mapa em memória com o arquivo compartilhado, permitindo ver contas de outras instâncias do app
+        let persistido = ler_mapa_pids_compartilhado();
+        let mut mapa = mapa_state.0.lock().unwrap_or_else(|e| e.into_inner());
+        for (pid, info) in persistido {
+            mapa.insert(pid, info);
+        }
+    }
     
     // 1. Coleta informações básicas segurando o lock do mapa de PIDs por pouco tempo
     let mut instancias: Vec<InfoInstancia> = {
@@ -481,13 +700,39 @@ async fn listar_instancias(
                 
                 let mut p_id = None;
                 let mut u_id = None;
+                let versao_cliente = processo
+                    .exe()
+                    .and_then(|p| p.parent())
+                    .and_then(|p| p.file_name())
+                    .and_then(|n| n.to_str())
+                    .map(|s| s.to_string());
                 
+                // Debug: imprime argumentos do processo uma vez por PID
+                #[cfg(debug_assertions)]
+                {
+                    let args_dbg: Vec<String> = processo.cmd().iter().map(|s| s.to_string_lossy().to_string()).collect();
+                    println!("[DEBUG] PID {} args: {:?}", pid, args_dbg);
+                }
+
                 if let Some(user_id_num) = u_id_conta {
                     if let Some(info) = mapeamento_logs.get(&user_id_num) {
                         p_id = Some(info.place_id);
                         u_id = Some(info.universe_id);
                     }
                 }
+
+                // Fallback: tenta extrair placeId dos argumentos do processo
+                if p_id.is_none() {
+                    let args: Vec<String> = processo.cmd().iter().map(|s| s.to_string_lossy().to_string()).collect();
+                    p_id = extrair_place_id_cmd(&args);
+                    #[cfg(debug_assertions)]
+                    println!("[DEBUG] PID {} placeId via args: {:?}", pid, p_id);
+                }
+
+                let job_id_proc = {
+                    let args: Vec<String> = processo.cmd().iter().map(|s| s.to_string_lossy().to_string()).collect();
+                    extrair_job_id_cmd(&args)
+                };
 
                 InfoInstancia {
                     pid,
@@ -497,6 +742,9 @@ async fn listar_instancias(
                     place_id: p_id,
                     universe_id: u_id,
                     nome_jogo: None,
+                    versao: versao_cliente,
+                    caminho_cliente: processo.exe().map(|p| p.to_string_lossy().to_string()),
+                    job_id: job_id_proc,
                 }
             })
             .collect()
@@ -518,7 +766,7 @@ async fn listar_instancias(
                 inst.nome_jogo = Some(nome);
             } else {
                 // Busca fora do lock
-                if let Ok(nome_res) = buscar_nome_jogo(pid).await {
+                if let Ok(nome_res) = buscar_nome_jogo(pid, inst.universe_id).await {
                     inst.nome_jogo = Some(nome_res.clone());
                     // Atualiza o cache (novo lock)
                     let mut cache = cache_state.0.lock().unwrap_or_else(|e| e.into_inner());
@@ -533,7 +781,7 @@ async fn listar_instancias(
 
 /// Encerra uma instância do Roblox pelo PID
 #[tauri::command]
-async fn fechar_instancia(pid: u32) -> Result<(), String> {
+async fn fechar_instancia(pid: u32, mapa_state: State<'_, MapaPidsContas>) -> Result<(), String> {
     let mut sistema = System::new_all();
     sistema.refresh_all();
 
@@ -541,6 +789,12 @@ async fn fechar_instancia(pid: u32) -> Result<(), String> {
 
     if let Some(processo) = sistema.process(pid_sysinfo) {
         processo.kill();
+        // Remove mapeamento compartilhado
+        {
+            let mut mapa = mapa_state.0.lock().unwrap_or_else(|e| e.into_inner());
+            mapa.remove(&pid);
+            salvar_mapa_pids_compartilhado(&mapa);
+        }
         Ok(())
     } else {
         Err(format!("Processo com PID {} não encontrado.", pid))
@@ -1328,7 +1582,7 @@ async fn buscar_jogos_roblox(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .manage(MapaPidsContas::default())
+        .manage(mapa_pids_inicial())
         .manage(CacheJogos::default())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())

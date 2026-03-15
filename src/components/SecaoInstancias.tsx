@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, RefreshCw, AlertTriangle, Loader2, Inbox, Trash2, X, Search, UserCircle, Settings2, Download
@@ -6,6 +6,7 @@ import {
 import { CartaoInstancia } from './CartaoInstancia';
 import { useInstancias } from '../hooks/useInstancias';
 import { useContas } from '../hooks/useContas';
+import { InfoInstancia } from '../tipos';
 import { useTranslation, Trans } from 'react-i18next';
 
 export function SecaoInstancias() {
@@ -39,6 +40,10 @@ export function SecaoInstancias() {
   const [mostrarSeletorCliente, definirMostrarSeletorCliente] = useState(false);
 
   const [nomeClienteNovo, definirNomeClienteNovo] = useState('');
+
+  const pidsFechadosManual = useRef<Set<number>>(new Set());
+  const instanciasAnteriores = useRef<InfoInstancia[]>([]);
+  const cooldownRelaunchPorConta = useRef<Map<string, number>>(new Map());
 
   const exibirFeedback = useCallback((tipo: 'sucesso' | 'erro', texto: string) => {
     definirMensagemFeedback({ tipo, texto });
@@ -95,6 +100,7 @@ export function SecaoInstancias() {
 
   const aoFecharInstancia = useCallback(async (pid: number) => {
     definirPidFechando(pid);
+    pidsFechadosManual.current = new Set(pidsFechadosManual.current).add(pid);
     try {
       const resultado = await fecharInstancia(pid);
       if (!resultado.sucesso) exibirFeedback('erro', resultado.mensagem);
@@ -102,6 +108,66 @@ export function SecaoInstancias() {
       definirPidFechando(null);
     }
   }, [fecharInstancia, exibirFeedback]);
+
+  const autoRelancarInstancia = useCallback(async (inst: InfoInstancia) => {
+    if (!inst.conta_id || !inst.place_id) return;
+    // Se não houver caminho do cliente, não conseguimos relançar na mesma versão
+    if (!inst.caminho_cliente) return;
+    const agora = Date.now();
+    const cooldownAtual = cooldownRelaunchPorConta.current.get(inst.conta_id) || 0;
+    if (agora - cooldownAtual < 30000) return; // evita loop em 30s
+
+    cooldownRelaunchPorConta.current.set(inst.conta_id, agora);
+
+    try {
+      let ticket: string | undefined;
+      const conta = contas.find(c => c.id === inst.conta_id);
+      const userId = conta?.usuario.id;
+      const resultadoTicket = await obterTicketParaConta(inst.conta_id);
+      if (resultadoTicket.sucesso && resultadoTicket.ticket) {
+        ticket = resultadoTicket.ticket;
+      }
+
+      // Blox Fruits: sempre usar place raiz para evitar erro 524 ao entrar direto no Sea2/Sea3
+      const placeNormalizado = inst.universe_id === 994732206 ? 2753915549 : inst.place_id;
+
+      const resultado = await lancarNovaInstancia({
+        ticket,
+        contaId: inst.conta_id,
+        userId,
+        placeId: placeNormalizado,
+        caminho: inst.caminho_cliente,
+        // não passar jobId para evitar erro 524 (entra em servidor público padrão)
+      });
+
+      exibirFeedback(resultado.sucesso ? 'sucesso' : 'erro', resultado.mensagem);
+    } catch (e) {
+      exibirFeedback('erro', String(e));
+    }
+  }, [contas, lancarNovaInstancia, obterTicketParaConta, exibirFeedback]);
+
+  useEffect(() => {
+    const anteriores = instanciasAnteriores.current;
+    const atuaisPids = new Set(instancias.map(i => i.pid));
+
+    anteriores.forEach((inst) => {
+      if (!atuaisPids.has(inst.pid)) {
+        const foiManual = pidsFechadosManual.current.has(inst.pid);
+        if (foiManual) {
+          const novo = new Set(pidsFechadosManual.current);
+          novo.delete(inst.pid);
+          pidsFechadosManual.current = novo;
+          return;
+        }
+
+        if (inst.place_id) {
+          autoRelancarInstancia(inst);
+        }
+      }
+    });
+
+    instanciasAnteriores.current = instancias;
+  }, [instancias, autoRelancarInstancia]);
 
   return (
     <div className="flex flex-col h-full">
